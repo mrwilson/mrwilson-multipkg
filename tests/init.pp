@@ -10,7 +10,12 @@
 # http://docs.puppetlabs.com/guides/tests_smoke.html
 #
 
+$vim = $::operatingsystem ? {
+  'Fedora'  => 'vim-common',
+  default   => 'vim'
+}
+
 multipkg { 'utils':
   ensure   => present,
-  packages => [ 'vim', 'emacs' ]
+  packages => [ $vim, 'emacs' ]
 }
