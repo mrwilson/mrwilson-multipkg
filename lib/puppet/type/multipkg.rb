@@ -14,7 +14,7 @@ Puppet::Type.newtype(:multipkg) do
   end
 
   newproperty(:packages, :array_matching => :all) do
-    desc "Proxy Server setting for the interface"
+    desc "Array of packages to install"
   end
 
 end
