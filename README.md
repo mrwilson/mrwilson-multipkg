@@ -1,5 +1,7 @@
 # multipkg
 
+  [![Build Status](https://travis-ci.org/mrwilson/mrwilson-multipkg.png?branch=master)](https://travis-ci.org/mrwilson/mrwilson-multipkg)
+
 This is the multipkg module.
 
 ## License
