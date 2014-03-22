@@ -4,6 +4,11 @@
 
 This is the multipkg module.
 
+# Supports
+
+ * rpm
+ * apt
+
 ## License
 
 MIT
