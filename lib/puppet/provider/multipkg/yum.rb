@@ -1,8 +1,10 @@
 Puppet::Type.type(:multipkg).provide(:yum) do
 commands :yum => '/usr/bin/yum'
+commands :rpm => '/usr/bin/rpm'
 
   def exists?
-    yum_packages = []
+    desired_packages = []
+    yum_lookup_arr = []
     group_packages = []
     return true if @resource[:packages].size == 0
     # Separate group packages from normal yum packages
@@ -10,14 +12,23 @@ commands :yum => '/usr/bin/yum'
       if package.start_with?("@") then
         group_packages << package
       else
-        yum_packages << package 
+        # Save all packages to verify later
+        desired_packages << package
+        # We need to take off arch because rpm command doesn't accept them
+        yum_lookup_arr = desired_packages.map {|item| item.split(".").first }
       end
     }
 
     # Test yum packages
-    output = pkg_list("list", yum_packages)
-    if output.size != ( yum_packages.size) then
-      return false
+    output = pkg_list("list", yum_lookup_arr)
+    # Verify each package
+    for pkg in desired_packages
+      # DEBUG: puts "checking " + pkg
+      # DEBUG: puts output.grep(/^#{Regexp.escape pkg}/).to_s
+      # All returned packages have arch so we should check if they start with string, not match
+      unless output.grep(/^#{Regexp.escape pkg}/).size > 0
+        return false
+      end
     end
 
     # Test group packages
@@ -26,6 +37,7 @@ commands :yum => '/usr/bin/yum'
       return false
     end
 
+    # If all packages and groups are already installed return true
     return true
   end
 
@@ -34,16 +46,10 @@ commands :yum => '/usr/bin/yum'
     output = []
     # fix yum list output
     if arg=="list" then
-      cmd << arg << "-q" << "-e0" << pkg
-      output = yum(cmd).split("\n")
-      # column formatting is inconsistant
-      output.reject! { |item| item.start_with?(" ") }
-      # only take package name
-      output.map! {|item | item.split(".").first}
-      output.map!(&:downcase)
+      # Use rpm for cleaner output
+      cmd << "--query" << "--all" << "--queryformat" << "[%{NAME}.%{ARCH}\n]" << pkg
+      output = rpm(cmd).split("\n")
       # remove duplicates (i.e. kernel-*)
-      output.uniq!
-      output = output.slice( (output.index("installed packages") +1)..(output.index("available packages") -1))
     # fix grouplist output
     elsif arg=="grouplist"
       cmd << "-v" << arg << "-e0" 
@@ -71,7 +77,7 @@ commands :yum => '/usr/bin/yum'
     if @resource[:packages].size != 0
       cmd = ['install']
       cmd << '-q' << '-y' << '-e0' << @resource[:packages]
-      Puppet.notice("Installing #{@resource[:packages]} in a transaction")
+      #Puppet.notice("Installing #{@resource[:packages]} in a transaction")
       yum(cmd)
     end
   end
